@@ -2,7 +2,7 @@
 Analysis of biofilm and clumping data for replication of measurements related to our wild Akkermansia isolates.
 
 # Biofilm Analysis
-For biofilm assays, this code takes raw OD measurements from a plate reader and calculates the average OD for each isolate in each plate.
+For biofilm assays, this code takes raw OD measurements from a plate reader and calculates the average OD for each isolate in each plate. /n
 The mean is then used to calculate the fold change from BAA-835 and the fold change from the mean OD of the respective plate.
 The output is a .csv file containing as a dataframe:
   Isolate
