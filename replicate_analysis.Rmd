@@ -1,0 +1,65 @@
+---
+title: "Biofilm and Clump Replication"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, prompt = FALSE, eval = TRUE, 
+                      warning = TRUE, comment=NA, cache = FALSE,
+                      dpi = 300,
+                      fig.width = 20, fig.height = 15)
+library(tidyverse)
+library(readr)
+library(cowplot)
+library(gghighlight)
+```
+
+## Biofilm
+
+
+
+## Clumping
+
+```{r}
+clump <- read_csv("C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/clump_replicates_raw.csv")
+
+clump$Column <- as.factor(clump$Column)
+clump$Plate <- as.factor(clump$Plate)
+```
+
+```{r}
+levels(clump$Plate)
+```
+
+
+```{r}
+only_growth <- clump %>% filter(Bottom_OD > 0.1)
+```
+
+```{r}
+plates <- levels(clump$Plate)
+all_clump <- "no data"
+for (i in plates){
+  just_plate <- only_growth %>% filter(Plate == i) %>%
+    mutate(BT_Ratio = Bottom_OD/Top_OD) %>%
+    group_by(Isolate) %>%
+    mutate(mean_BT = mean(BT_Ratio)) %>%
+    distinct(Plate, .keep_all = TRUE) %>%
+    as.data.frame() %>%
+    select(c(Isolate, Plate, mean_BT))
+  mean_BAA <- as.numeric(just_plate[just_plate$Isolate == "BAA-835", 3])
+  mean_all <- mean(just_plate$mean_BT)
+  df_plate <- just_plate %>%
+    mutate(foldchange_BAA = mean_BT/mean_BAA, foldchange_mean = mean_BT/mean_all)
+  
+  if (all_clump == "no data"){
+    all_clump <- df_plate
+  } else {
+    all_clump <- rbind(all_clump, df_plate)
+  }
+}
+```
+
+```{r}
+write.csv(all_clump, "C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/clump_replicates.csv")
+```
