@@ -368,6 +368,49 @@ summary {
 
 <div id="biofilm" class="section level2">
 <h2>Biofilm</h2>
+<pre class="r"><code>biofilm &lt;- read_csv(&quot;C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates_raw.csv&quot;)</code></pre>
+<pre><code>Parsed with column specification:
+cols(
+  Column = col_double(),
+  Row = col_character(),
+  Well = col_character(),
+  Isolate = col_character(),
+  Plate = col_character(),
+  OD = col_double()
+)</code></pre>
+<pre class="r"><code>biofilm$Column &lt;- as.factor(biofilm$Column)
+biofilm$Plate &lt;- as.factor(biofilm$Plate)</code></pre>
+<pre class="r"><code>levels(biofilm$Plate)</code></pre>
+<pre><code>[1] &quot;F1-2&quot; &quot;F2-2&quot; &quot;F3-2&quot; &quot;S-1&quot; </code></pre>
+<pre class="r"><code>plates &lt;- levels(biofilm$Plate)
+all_biofilm &lt;- &quot;no data&quot;
+for (i in plates){
+  just_plate &lt;- biofilm %&gt;% filter(Plate == i) %&gt;%
+    group_by(Isolate) %&gt;%
+    mutate(mean_OD = mean(OD)) %&gt;%
+    distinct(Plate, .keep_all = TRUE) %&gt;%
+    as.data.frame() %&gt;%
+    select(c(Isolate, Plate, mean_OD))
+  mean_BAA &lt;- as.numeric(just_plate[just_plate$Isolate == &quot;BAA-835&quot;, 3])
+  mean_all &lt;- mean(just_plate$mean_OD)
+  df_plate &lt;- just_plate %&gt;%
+    mutate(foldchange_BAA = mean_OD/mean_BAA, foldchange_mean = mean_OD/mean_all)
+  
+  if(all_biofilm == &quot;no data&quot;){
+    all_biofilm &lt;- df_plate
+  } else{
+    all_biofilm &lt;- rbind(all_biofilm, df_plate)
+  }
+}</code></pre>
+<pre><code>Warning in if (all_biofilm == &quot;no data&quot;) {: the condition has length &gt; 1 and
+only the first element will be used
+
+Warning in if (all_biofilm == &quot;no data&quot;) {: the condition has length &gt; 1 and
+only the first element will be used
+
+Warning in if (all_biofilm == &quot;no data&quot;) {: the condition has length &gt; 1 and
+only the first element will be used</code></pre>
+<pre class="r"><code>write.csv(all_biofilm, &quot;C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates.csv&quot;)</code></pre>
 </div>
 <div id="clumping" class="section level2">
 <h2>Clumping</h2>
@@ -385,7 +428,7 @@ cols(
 <pre class="r"><code>clump$Column &lt;- as.factor(clump$Column)
 clump$Plate &lt;- as.factor(clump$Plate)</code></pre>
 <pre class="r"><code>levels(clump$Plate)</code></pre>
-<pre><code>[1] &quot;F1-1&quot; &quot;F2-1&quot; &quot;F3-1&quot; &quot;S-1&quot; </code></pre>
+<pre><code>[1] &quot;F1-1&quot; &quot;F1-2&quot; &quot;F2-1&quot; &quot;F2-2&quot; &quot;F3-1&quot; &quot;F3-2&quot; &quot;S-1&quot; </code></pre>
 <pre class="r"><code>only_growth &lt;- clump %&gt;% filter(Bottom_OD &gt; 0.1)</code></pre>
 <pre class="r"><code>plates &lt;- levels(clump$Plate)
 all_clump &lt;- &quot;no data&quot;
@@ -409,6 +452,15 @@ for (i in plates){
   }
 }</code></pre>
 <pre><code>Warning in if (all_clump == &quot;no data&quot;) {: the condition has length &gt; 1 and only
+the first element will be used
+
+Warning in if (all_clump == &quot;no data&quot;) {: the condition has length &gt; 1 and only
+the first element will be used
+
+Warning in if (all_clump == &quot;no data&quot;) {: the condition has length &gt; 1 and only
+the first element will be used
+
+Warning in if (all_clump == &quot;no data&quot;) {: the condition has length &gt; 1 and only
 the first element will be used
 
 Warning in if (all_clump == &quot;no data&quot;) {: the condition has length &gt; 1 and only

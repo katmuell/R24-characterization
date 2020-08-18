@@ -16,6 +16,43 @@ library(gghighlight)
 
 ## Biofilm
 
+```{r}
+biofilm <- read_csv("C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates_raw.csv")
+
+biofilm$Column <- as.factor(biofilm$Column)
+biofilm$Plate <- as.factor(biofilm$Plate)
+```
+
+```{r}
+levels(biofilm$Plate)
+```
+
+```{r}
+plates <- levels(biofilm$Plate)
+all_biofilm <- "no data"
+for (i in plates){
+  just_plate <- biofilm %>% filter(Plate == i) %>%
+    group_by(Isolate) %>%
+    mutate(mean_OD = mean(OD)) %>%
+    distinct(Plate, .keep_all = TRUE) %>%
+    as.data.frame() %>%
+    select(c(Isolate, Plate, mean_OD))
+  mean_BAA <- as.numeric(just_plate[just_plate$Isolate == "BAA-835", 3])
+  mean_all <- mean(just_plate$mean_OD)
+  df_plate <- just_plate %>%
+    mutate(foldchange_BAA = mean_OD/mean_BAA, foldchange_mean = mean_OD/mean_all)
+  
+  if(all_biofilm == "no data"){
+    all_biofilm <- df_plate
+  } else{
+    all_biofilm <- rbind(all_biofilm, df_plate)
+  }
+}
+```
+
+```{r}
+write.csv(all_biofilm, "C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates.csv")
+```
 
 
 ## Clumping
@@ -30,7 +67,6 @@ clump$Plate <- as.factor(clump$Plate)
 ```{r}
 levels(clump$Plate)
 ```
-
 
 ```{r}
 only_growth <- clump %>% filter(Bottom_OD > 0.1)
