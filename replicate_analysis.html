@@ -389,7 +389,8 @@ for (i in plates){
   #Subtract blank from OD
   mean_blank &lt;- as.numeric(just_plate[just_plate$Isolate == &quot;blank&quot;, 3])
   blanked_plate &lt;- just_plate %&gt;%
-  mutate(blanked_OD = mean_OD - mean_blank) %&gt;% filter(Isolate != &quot;blank&quot;)
+  mutate(blanked_OD = mean_OD - mean_blank) %&gt;% 
+  filter(Isolate != &quot;blank&quot;)
   
   #Calculate fold changes
   mean_BAA &lt;- as.numeric(blanked_plate[blanked_plate$Isolate == &quot;BAA-835&quot;, 3])
@@ -413,21 +414,36 @@ for (i in plates){
 clump$Column &lt;- as.factor(clump$Column)
 clump$Plate &lt;- as.factor(clump$Plate)</code></pre>
 <pre class="r"><code>levels(clump$Plate)</code></pre>
-<pre><code>[1] &quot;F1-1&quot; &quot;F1-2&quot; &quot;F2-1&quot; &quot;F2-2&quot; &quot;F3-1&quot; &quot;F3-2&quot; &quot;S-1&quot; </code></pre>
-<pre class="r"><code>only_growth &lt;- clump %&gt;% filter(Bottom_OD &gt; 0.1)</code></pre>
+<pre><code> [1] &quot;F1-1&quot; &quot;F1-2&quot; &quot;F1-3&quot; &quot;F2-1&quot; &quot;F2-2&quot; &quot;F2-3&quot; &quot;F3-1&quot; &quot;F3-2&quot; &quot;F3-3&quot; &quot;S-1&quot; 
+[11] &quot;S-2&quot; </code></pre>
 <pre class="r"><code>plates &lt;- levels(clump$Plate)
 all_clump &lt;- &quot;no data&quot;
 for (i in plates){
-  just_plate &lt;- only_growth %&gt;% filter(Plate == i) %&gt;%
-    mutate(BT_Ratio = Bottom_OD/Top_OD) %&gt;%
+  just_plate &lt;- clump %&gt;% filter(Plate == i)
+  
+  #Subtract blank from OD
+  blanks &lt;- just_plate %&gt;% filter(Isolate == &quot;blank&quot;)
+  mean_top &lt;- mean(blanks$Top_OD)
+  mean_bottom &lt;- mean(blanks$Bottom_OD)
+  blanked_plate &lt;- just_plate %&gt;%
+    mutate(blanked_top = Top_OD - mean_top, blanked_bottom = Bottom_OD - mean_bottom) %&gt;%
+    filter(Isolate != &quot;blank&quot;)
+  blanked_plate$blanked_top &lt;- abs(blanked_plate$blanked_top)
+  
+  #Remove samples that did not grow
+  only_growth &lt;- blanked_plate %&gt;% filter(blanked_bottom &gt; 0)
+  
+  #Calculate fold changes
+  ratio_plate &lt;- blanked_plate %&gt;%
+    mutate(BT_Ratio = blanked_bottom/blanked_top) %&gt;%
     group_by(Isolate) %&gt;%
     mutate(mean_BT = mean(BT_Ratio)) %&gt;%
     distinct(Plate, .keep_all = TRUE) %&gt;%
     as.data.frame() %&gt;%
     select(c(Isolate, Plate, mean_BT))
-  mean_BAA &lt;- as.numeric(just_plate[just_plate$Isolate == &quot;BAA-835&quot;, 3])
-  mean_all &lt;- mean(just_plate$mean_BT)
-  df_plate &lt;- just_plate %&gt;%
+  mean_BAA &lt;- as.numeric(ratio_plate[ratio_plate$Isolate == &quot;BAA-835&quot;, 3])
+  mean_all &lt;- mean(ratio_plate$mean_BT)
+  df_plate &lt;- ratio_plate %&gt;%
     mutate(foldchange_BAA = mean_BT/mean_BAA, foldchange_mean = mean_BT/mean_all)
   
   if (all_clump == &quot;no data&quot;){

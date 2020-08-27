@@ -43,7 +43,8 @@ for (i in plates){
   #Subtract blank from OD
   mean_blank <- as.numeric(just_plate[just_plate$Isolate == "blank", 3])
   blanked_plate <- just_plate %>%
-  mutate(blanked_OD = mean_OD - mean_blank) %>% filter(Isolate != "blank")
+  mutate(blanked_OD = mean_OD - mean_blank) %>% 
+  filter(Isolate != "blank")
   
   #Calculate fold changes
   mean_BAA <- as.numeric(blanked_plate[blanked_plate$Isolate == "BAA-835", 3])
@@ -77,24 +78,35 @@ clump$Plate <- as.factor(clump$Plate)
 levels(clump$Plate)
 ```
 
-```{r}
-only_growth <- clump %>% filter(Bottom_OD > 0.1)
-```
-
 ```{r, warning=FALSE}
 plates <- levels(clump$Plate)
 all_clump <- "no data"
 for (i in plates){
-  just_plate <- only_growth %>% filter(Plate == i) %>%
-    mutate(BT_Ratio = Bottom_OD/Top_OD) %>%
+  just_plate <- clump %>% filter(Plate == i)
+  
+  #Subtract blank from OD
+  blanks <- just_plate %>% filter(Isolate == "blank")
+  mean_top <- mean(blanks$Top_OD)
+  mean_bottom <- mean(blanks$Bottom_OD)
+  blanked_plate <- just_plate %>%
+    mutate(blanked_top = Top_OD - mean_top, blanked_bottom = Bottom_OD - mean_bottom) %>%
+    filter(Isolate != "blank")
+  blanked_plate$blanked_top <- abs(blanked_plate$blanked_top)
+  
+  #Remove samples that did not grow
+  only_growth <- blanked_plate %>% filter(blanked_bottom > 0)
+  
+  #Calculate fold changes
+  ratio_plate <- blanked_plate %>%
+    mutate(BT_Ratio = blanked_bottom/blanked_top) %>%
     group_by(Isolate) %>%
     mutate(mean_BT = mean(BT_Ratio)) %>%
     distinct(Plate, .keep_all = TRUE) %>%
     as.data.frame() %>%
     select(c(Isolate, Plate, mean_BT))
-  mean_BAA <- as.numeric(just_plate[just_plate$Isolate == "BAA-835", 3])
-  mean_all <- mean(just_plate$mean_BT)
-  df_plate <- just_plate %>%
+  mean_BAA <- as.numeric(ratio_plate[ratio_plate$Isolate == "BAA-835", 3])
+  mean_all <- mean(ratio_plate$mean_BT)
+  df_plate <- ratio_plate %>%
     mutate(foldchange_BAA = mean_BT/mean_BAA, foldchange_mean = mean_BT/mean_all)
   
   if (all_clump == "no data"){
