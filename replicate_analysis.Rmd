@@ -64,10 +64,9 @@ for (i in plates){
 write.csv(all_biofilm, "C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates.csv")
 ```
 
-
 ## Clumping
 
-```{r}
+```{r, message=FALSE}
 clump <- read_csv("C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/clump_replicates_raw.csv")
 
 clump$Column <- as.factor(clump$Column)
@@ -82,7 +81,7 @@ levels(clump$Plate)
 only_growth <- clump %>% filter(Bottom_OD > 0.1)
 ```
 
-```{r}
+```{r, warning=FALSE}
 plates <- levels(clump$Plate)
 all_clump <- "no data"
 for (i in plates){
