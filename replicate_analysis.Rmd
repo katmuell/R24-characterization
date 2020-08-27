@@ -16,7 +16,7 @@ library(gghighlight)
 
 ## Biofilm
 
-```{r}
+```{r, message=FALSE}
 biofilm <- read_csv("C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates_raw.csv")
 
 biofilm$Column <- as.factor(biofilm$Column)
@@ -27,21 +27,31 @@ biofilm$Plate <- as.factor(biofilm$Plate)
 levels(biofilm$Plate)
 ```
 
-```{r}
+```{r, warning=FALSE}
 plates <- levels(biofilm$Plate)
 all_biofilm <- "no data"
+
 for (i in plates){
+  #Calculate mean OD
   just_plate <- biofilm %>% filter(Plate == i) %>%
     group_by(Isolate) %>%
     mutate(mean_OD = mean(OD)) %>%
     distinct(Plate, .keep_all = TRUE) %>%
     as.data.frame() %>%
     select(c(Isolate, Plate, mean_OD))
-  mean_BAA <- as.numeric(just_plate[just_plate$Isolate == "BAA-835", 3])
-  mean_all <- mean(just_plate$mean_OD)
-  df_plate <- just_plate %>%
+  
+  #Subtract blank from OD
+  mean_blank <- as.numeric(just_plate[just_plate$Isolate == "blank", 3])
+  blanked_plate <- just_plate %>%
+  mutate(blanked_OD = mean_OD - mean_blank)
+  
+  #Calculate fold changes
+  mean_BAA <- as.numeric(blanked_plate[blanked_plate$Isolate == "BAA-835", 3])
+  mean_all <- mean(blanked_plate$mean_OD)
+  df_plate <- blanked_plate %>%
     mutate(foldchange_BAA = mean_OD/mean_BAA, foldchange_mean = mean_OD/mean_all)
   
+  #Set up dataframe of final output
   if(all_biofilm == "no data"){
     all_biofilm <- df_plate
   } else{
