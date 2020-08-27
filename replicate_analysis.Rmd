@@ -43,7 +43,7 @@ for (i in plates){
   #Subtract blank from OD
   mean_blank <- as.numeric(just_plate[just_plate$Isolate == "blank", 3])
   blanked_plate <- just_plate %>%
-  mutate(blanked_OD = mean_OD - mean_blank)
+  mutate(blanked_OD = mean_OD - mean_blank) %>% filter(Isolate != "blank")
   
   #Calculate fold changes
   mean_BAA <- as.numeric(blanked_plate[blanked_plate$Isolate == "BAA-835", 3])
