@@ -374,38 +374,23 @@ biofilm$Column &lt;- as.factor(biofilm$Column)
 biofilm$Plate &lt;- as.factor(biofilm$Plate)</code></pre>
 <pre class="r"><code>levels(biofilm$Plate)</code></pre>
 <pre><code>[1] &quot;F1-2&quot; &quot;F1-3&quot; &quot;F2-2&quot; &quot;F2-3&quot; &quot;F3-2&quot; &quot;F3-3&quot; &quot;S-1&quot;  &quot;S-2&quot; </code></pre>
-<pre class="r"><code>plates &lt;- levels(biofilm$Plate)
-all_biofilm &lt;- &quot;no data&quot;
+<pre class="r"><code>#Subtract blank from OD
+mean_blank &lt;- mean(biofilm$OD[biofilm$Isolate == &quot;blank&quot;])
+biofilm_samples &lt;- biofilm %&gt;%
+  filter(Isolate != &quot;blank&quot;) %&gt;%
+  mutate(blanked_OD = OD - mean_blank)
+biofilm_samples$blanked_OD[biofilm_samples$blanked_OD &lt; 0] &lt;- 0
 
-for (i in plates){
-  #Calculate mean OD
-  just_plate &lt;- biofilm %&gt;% filter(Plate == i) %&gt;%
-    group_by(Isolate) %&gt;%
-    mutate(mean_OD = mean(OD)) %&gt;%
-    distinct(Plate, .keep_all = TRUE) %&gt;%
-    as.data.frame() %&gt;%
-    select(c(Isolate, Plate, mean_OD))
-  
-  #Subtract blank from OD
-  mean_blank &lt;- as.numeric(just_plate[just_plate$Isolate == &quot;blank&quot;, 3])
-  blanked_plate &lt;- just_plate %&gt;%
-  mutate(blanked_OD = mean_OD - mean_blank) %&gt;% 
-  filter(Isolate != &quot;blank&quot;)
-  
-  #Calculate fold changes
-  mean_BAA &lt;- as.numeric(blanked_plate[blanked_plate$Isolate == &quot;BAA-835&quot;, 3])
-  mean_all &lt;- mean(blanked_plate$mean_OD)
-  df_plate &lt;- blanked_plate %&gt;%
-    mutate(foldchange_BAA = mean_OD/mean_BAA, foldchange_mean = mean_OD/mean_all)
-  
-  #Set up dataframe of final output
-  if(all_biofilm == &quot;no data&quot;){
-    all_biofilm &lt;- df_plate
-  } else{
-    all_biofilm &lt;- rbind(all_biofilm, df_plate)
-  }
-}</code></pre>
-<pre class="r"><code>write.csv(all_biofilm, &quot;C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates.csv&quot;)</code></pre>
+#Calculate fold changes
+mean_all &lt;- mean(biofilm_samples$blanked_OD)
+biofilm_df &lt;- biofilm_samples %&gt;%
+  group_by(Plate, Isolate) %&gt;%
+  mutate(Isolate_OD = mean(blanked_OD)) %&gt;%
+  distinct(Plate, .keep_all = TRUE) %&gt;%
+  as.data.frame() %&gt;%
+  select(c(Isolate, Plate, Isolate_OD)) %&gt;%
+  mutate(foldchange = Isolate_OD/mean_all)</code></pre>
+<pre class="r"><code>write.csv(biofilm_df, &quot;C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates.csv&quot;)</code></pre>
 </div>
 <div id="clumping" class="section level2">
 <h2>Clumping</h2>

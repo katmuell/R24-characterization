@@ -27,42 +27,27 @@ biofilm$Plate <- as.factor(biofilm$Plate)
 levels(biofilm$Plate)
 ```
 
-```{r, warning=FALSE}
-plates <- levels(biofilm$Plate)
-all_biofilm <- "no data"
+```{r}
+#Subtract blank from OD
+mean_blank <- mean(biofilm$OD[biofilm$Isolate == "blank"])
+biofilm_samples <- biofilm %>%
+  filter(Isolate != "blank") %>%
+  mutate(blanked_OD = OD - mean_blank)
+biofilm_samples$blanked_OD[biofilm_samples$blanked_OD < 0] <- 0
 
-for (i in plates){
-  #Calculate mean OD
-  just_plate <- biofilm %>% filter(Plate == i) %>%
-    group_by(Isolate) %>%
-    mutate(mean_OD = mean(OD)) %>%
-    distinct(Plate, .keep_all = TRUE) %>%
-    as.data.frame() %>%
-    select(c(Isolate, Plate, mean_OD))
-  
-  #Subtract blank from OD
-  mean_blank <- as.numeric(just_plate[just_plate$Isolate == "blank", 3])
-  blanked_plate <- just_plate %>%
-  mutate(blanked_OD = mean_OD - mean_blank) %>% 
-  filter(Isolate != "blank")
-  
-  #Calculate fold changes
-  mean_BAA <- as.numeric(blanked_plate[blanked_plate$Isolate == "BAA-835", 3])
-  mean_all <- mean(blanked_plate$mean_OD)
-  df_plate <- blanked_plate %>%
-    mutate(foldchange_BAA = mean_OD/mean_BAA, foldchange_mean = mean_OD/mean_all)
-  
-  #Set up dataframe of final output
-  if(all_biofilm == "no data"){
-    all_biofilm <- df_plate
-  } else{
-    all_biofilm <- rbind(all_biofilm, df_plate)
-  }
-}
+#Calculate fold changes
+mean_all <- mean(biofilm_samples$blanked_OD)
+biofilm_df <- biofilm_samples %>%
+  group_by(Plate, Isolate) %>%
+  mutate(Isolate_OD = mean(blanked_OD)) %>%
+  distinct(Plate, .keep_all = TRUE) %>%
+  as.data.frame() %>%
+  select(c(Isolate, Plate, Isolate_OD)) %>%
+  mutate(foldchange = Isolate_OD/mean_all)
 ```
 
 ```{r}
-write.csv(all_biofilm, "C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates.csv")
+write.csv(biofilm_df, "C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/biofilm_replicates.csv")
 ```
 
 ## Clumping
