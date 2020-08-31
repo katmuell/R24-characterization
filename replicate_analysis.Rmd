@@ -75,7 +75,11 @@ blanked_clump$blanked_top[blanked_clump$blanked_top < 0] <- 0
 
 #Calculate agglutination
 clumping_df <- blanked_clump %>%
-  mutate(agglutination = 1 - (blanked_top/blanked_bottom))
+  group_by(Plate, Isolate) %>% mutate(mean_top = mean(blanked_top), mean_bottom = mean(blanked_bottom)) %>%
+  distinct(Plate, .keep_all = TRUE) %>%
+  as.data.frame() %>%
+  select(Isolate, Plate, mean_top, mean_bottom) %>%
+  mutate(agglutination = 1 - (mean_top/mean_bottom))
 ```
 
 ```{r}
