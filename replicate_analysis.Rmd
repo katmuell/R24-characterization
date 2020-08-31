@@ -62,46 +62,22 @@ clump$Plate <- as.factor(clump$Plate)
 ```{r}
 levels(clump$Plate)
 ```
-
-```{r, warning=FALSE}
-plates <- levels(clump$Plate)
-all_clump <- "no data"
-for (i in plates){
-  just_plate <- clump %>% filter(Plate == i)
-  
+```{r}
+only_blanks <- clump %>%
+  filter(Isolate == "blank")
+mean_blank_clump <- mean(c(only_blanks$Bottom_OD, only_blanks$Top_OD))
+blanked_clump <- clump %>%
   #Subtract blank from OD
-  blanks <- just_plate %>% filter(Isolate == "blank")
-  mean_top <- mean(blanks$Top_OD)
-  mean_bottom <- mean(blanks$Bottom_OD)
-  blanked_plate <- just_plate %>%
-    mutate(blanked_top = Top_OD - mean_top, blanked_bottom = Bottom_OD - mean_bottom) %>%
-    filter(Isolate != "blank")
-  blanked_plate$blanked_top <- abs(blanked_plate$blanked_top)
-  
-  #Remove samples that did not grow
-  only_growth <- blanked_plate %>% filter(blanked_bottom > 0)
-  
-  #Calculate fold changes
-  ratio_plate <- blanked_plate %>%
-    mutate(BT_Ratio = blanked_bottom/blanked_top) %>%
-    group_by(Isolate) %>%
-    mutate(mean_BT = mean(BT_Ratio)) %>%
-    distinct(Plate, .keep_all = TRUE) %>%
-    as.data.frame() %>%
-    select(c(Isolate, Plate, mean_BT))
-  mean_BAA <- as.numeric(ratio_plate[ratio_plate$Isolate == "BAA-835", 3])
-  mean_all <- mean(ratio_plate$mean_BT)
-  df_plate <- ratio_plate %>%
-    mutate(foldchange_BAA = mean_BT/mean_BAA, foldchange_mean = mean_BT/mean_all)
-  
-  if (all_clump == "no data"){
-    all_clump <- df_plate
-  } else {
-    all_clump <- rbind(all_clump, df_plate)
-  }
-}
+  mutate(blanked_top = Top_OD - mean_blank_clump, blanked_bottom = Bottom_OD - mean_blank_clump) %>%
+  #Remove ungrown samples
+  filter(Isolate != "blank", blanked_bottom > 0)
+blanked_clump$blanked_top[blanked_clump$blanked_top < 0] <- 0
+
+#Calculate agglutination
+clumping_df <- blanked_clump %>%
+  mutate(agglutination = 1 - (blanked_top/blanked_bottom))
 ```
 
 ```{r}
-write.csv(all_clump, "C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/clump_replicates.csv")
+write.csv(clumping_df, "C:/Users/katmu/Dropbox/Valdivia Lab/Projects/Replication of Biofilm and Clumping/Data for Analysis/clump_replicates.csv")
 ```
